@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>访问密码 - LanShare</title>
+<style>
+  :root { color-scheme: light; }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: "Segoe UI", "Microsoft YaHei", "PingFang SC", system-ui, sans-serif;
+    background: #f5f6f8; color: #24292f; font-size: 14px;
+    min-height: 100vh; display: flex; flex-direction: column;
+    align-items: center; justify-content: center; padding: 16px;
+  }
+  .card {
+    width: 100%; max-width: 360px; background: #fff;
+    border: 1px solid #d0d7de; border-radius: 12px; padding: 28px 26px;
+    box-shadow: 0 4px 16px rgba(31, 35, 40, 0.06);
+  }
+  .logo { font-size: 20px; font-weight: 600; margin-bottom: 6px; }
+  .tip { color: #57606a; font-size: 13px; margin-bottom: 18px; line-height: 1.5; }
+  .err {
+    background: #ffebe9; border: 1px solid #ff818266; color: #cf222e;
+    padding: 8px 12px; border-radius: 6px; margin-bottom: 14px; font-size: 13px;
+  }
+  form { display: flex; flex-direction: column; gap: 12px; }
+  input[type=password] {
+    width: 100%; padding: 10px 12px; border: 1px solid #d0d7de; border-radius: 6px;
+    font-size: 14px; background: #fff; color: #24292f; outline: none;
+  }
+  input[type=password]:focus { border-color: #1f6feb; box-shadow: 0 0 0 3px #1f6feb1f; }
+  .btn {
+    display: inline-block; padding: 10px 14px; border-radius: 6px; border: 1px solid #d0d7de;
+    background: #fff; color: #24292f; text-decoration: none; cursor: pointer; font-size: 14px;
+    user-select: none; text-align: center;
+  }
+  .btn.primary { background: #1f6feb; border-color: #1f6feb; color: #fff; font-weight: 500; }
+  .btn.primary:hover { background: #1a5fd0; }
+  footer { margin-top: 22px; text-align: center; color: #8c959f; font-size: 12px; }
+</style>
+</head>
+<body>
+  <div class="card">
+    <div class="logo">🔒 LanShare</div>
+    <p class="tip">此共享已启用访问密码，请输入密码后继续浏览。</p>
+
+    {{if .Error}}
+      <div class="err">{{.Error}}</div>
+    {{end}}
+
+    <form method="post" action="/login" autocomplete="off">
+      <input type="hidden" name="next" value="{{.Next}}">
+      <input type="password" name="password" id="pw" placeholder="访问密码"
+             autofocus required autocomplete="current-password">
+      <button class="btn primary" type="submit">进入共享</button>
+    </form>
+  </div>
+  <footer>LanShare · 局域网文件共享</footer>
+</body>
+</html>

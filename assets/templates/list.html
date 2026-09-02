@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>{{.Title}}</title>
+<style>
+  :root { color-scheme: light; }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: "Segoe UI", "Microsoft YaHei", "PingFang SC", system-ui, sans-serif;
+    background: #f5f6f8; color: #24292f; font-size: 14px;
+  }
+  .wrap { max-width: 960px; margin: 0 auto; padding: 16px 14px 40px; }
+  header { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; padding: 6px 0 12px; }
+  .logo { font-size: 19px; font-weight: 600; }
+  .logo .sub { font-weight: 400; color: #57606a; font-size: 12px; margin-left: 6px; }
+  .spacer { flex: 1; }
+  .btn {
+    display: inline-block; padding: 6px 14px; border-radius: 6px; border: 1px solid #d0d7de;
+    background: #fff; color: #24292f; text-decoration: none; cursor: pointer; font-size: 13px;
+    user-select: none;
+  }
+  .btn:hover { background: #f3f4f6; }
+  .btn.primary { background: #1f6feb; border-color: #1f6feb; color: #fff; }
+  .btn.primary:hover { background: #1a5fd0; }
+  .btn.sm { padding: 3px 10px; font-size: 12px; }
+  .crumb { display: flex; align-items: center; flex-wrap: wrap; gap: 2px;
+    background: #fff; border: 1px solid #d0d7de; border-radius: 8px; padding: 9px 12px; margin-bottom: 12px;
+    font-size: 14px; }
+  .crumb a { color: #1f6feb; text-decoration: none; }
+  .crumb a:hover { text-decoration: underline; }
+  .crumb .sep { color: #8c959f; margin: 0 5px; }
+  .toolbar { display: flex; gap: 8px; align-items: center; margin-bottom: 10px; flex-wrap: wrap; }
+  .count { color: #57606a; font-size: 12px; }
+  table { width: 100%; border-collapse: collapse; background: #fff;
+    border: 1px solid #d0d7de; border-radius: 8px; overflow: hidden; }
+  th { text-align: left; background: #f6f8fa; color: #57606a; font-weight: 500;
+    font-size: 12px; padding: 8px 12px; border-bottom: 1px solid #d0d7de; }
+  td { padding: 7px 12px; border-bottom: 1px solid #eaeef2; vertical-align: middle; }
+  tr:last-child td { border-bottom: none; }
+  tr.dir-row { cursor: pointer; }
+  tr:hover td { background: #f6f8fa; }
+  td.cb { width: 34px; }
+  .name { display: flex; align-items: center; gap: 8px; }
+  .ic { width: 18px; text-align: center; font-size: 15px; flex-shrink: 0; }
+  .ic.f { color: #8c959f; }
+  .ic.d { color: #d29922; }
+  td.size, th.size { text-align: right; white-space: nowrap; width: 90px; }
+  td.mod, th.mod { white-space: nowrap; width: 140px; color: #57606a; font-size: 12px; }
+  a.fname { color: #24292f; text-decoration: none; overflow-wrap: anywhere; }
+  a.fname:hover { color: #1f6feb; }
+  .row-act { display: flex; gap: 6px; justify-content: flex-end; }
+  .empty { text-align: center; color: #57606a; padding: 40px 0; background: #fff;
+    border: 1px solid #d0d7de; border-radius: 8px; }
+  .pager { display: flex; justify-content: center; gap: 10px; margin-top: 14px; align-items: center; color:#57606a; font-size: 13px;}
+  footer { text-align: center; color: #8c959f; font-size: 12px; margin-top: 24px; }
+  .notice { background:#fff8c5; border:1px solid #d4a72c66; color:#7a5b00; padding:8px 12px;
+    border-radius:6px; margin-bottom:10px; font-size:13px;}
+  @media (max-width: 640px) {
+    th.mod, td.mod, th.size, td.size { display: none; }
+    .wrap { padding: 10px 8px 30px; }
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div class="logo">📁 LanShare <span class="sub">局域网文件共享</span></div>
+    <div class="spacer"></div>
+    {{if .AuthOn}}
+      <a class="btn" href="{{.LogoutURL}}">退出登录</a>
+    {{end}}
+    <a class="btn" href="{{.AllZipURL}}">⬇ 打包当前目录</a>
+  </header>
+
+  <div class="crumb">
+    {{range $i, $c := .Crumbs}}
+      {{if gt $i 0}}<span class="sep">›</span>{{end}}
+      {{if $c.URL}}<a href="{{$c.URL}}">{{$c.Name}}</a>{{else}}<span>{{$c.Name}}</span>{{end}}
+    {{end}}
+  </div>
+
+  {{if .Empty}}
+    <div class="empty">此目录为空</div>
+  {{else}}
+    <div class="toolbar">
+      <span class="count">{{len .Entries}} 项{{if .Paging.HasNext}}（第 {{.Paging.Page}} 页）{{end}}</span>
+    </div>
+    <table>
+      <thead>
+        <tr>
+          <th class="cb"><input type="checkbox" id="selAll" title="全选本页"></th>
+          <th>名称</th>
+          <th class="size">大小</th>
+          <th class="mod">修改时间</th>
+          <th style="width:180px"></th>
+        </tr>
+      </thead>
+      <tbody>
+        {{range .Entries}}
+        <tr class="{{if .IsDir}}dir-row{{end}}" data-url="{{.URL}}">
+          {{if .IsDir}}
+            <td class="cb"><input type="checkbox" value="{{.URL}}" data-path="1"></td>
+          {{else}}
+            <td class="cb"><input type="checkbox" value="{{.URL}}"></td>
+          {{end}}
+          <td><div class="name">
+            <span class="ic {{if .IsDir}}d{{else}}f{{end}}">{{if .IsDir}}📂{{else}}📄{{end}}</span>
+            {{if .IsDir}}<a class="fname" href="{{.URL}}">{{.Name}}</a>{{else}}<a class="fname" href="{{.URL}}">{{.Name}}</a>{{end}}
+          </div></td>
+          <td class="size">{{.Size}}</td>
+          <td class="mod">{{.Mod}}</td>
+          <td><div class="row-act">
+            {{if .IsDir}}
+              <a class="btn sm" href="{{.ZipURL}}">打包 ZIP</a>
+            {{else}}
+              <a class="btn sm" href="{{.URL}}">下载</a>
+            {{end}}
+          </div></td>
+        </tr>
+        {{end}}
+      </tbody>
+    </table>
+
+    <div class="toolbar" style="margin-top:10px">
+      <button class="btn sm" id="btnZipSel" disabled>打包选中项</button>
+      <span class="count" id="selHint"></span>
+    </div>
+
+    {{if or .Paging.HasPrev .Paging.HasNext}}
+    <div class="pager">
+      {{if .Paging.HasPrev}}<a class="btn sm" href="{{.Paging.PrevURL}}">← 上一页</a>{{end}}
+      <span>第 {{.Paging.Page}} 页</span>
+      {{if .Paging.HasNext}}<a class="btn sm" href="{{.Paging.NextURL}}">下一页 →</a>{{end}}
+    </div>
+    {{end}}
+  {{end}}
+
+  <footer>LanShare v{{.Version}} · 局域网文件共享</footer>
+</div>
+
+<script>
+(function () {
+  // 目录行点击进入（排除勾选与按钮操作）
+  var dirs = document.querySelectorAll('tr.dir-row');
+  dirs.forEach(function (tr) {
+    tr.addEventListener('click', function (e) {
+      if (e.target.tagName === 'A' || e.target.tagName === 'INPUT') return;
+      location.href = tr.getAttribute('data-url');
+    });
+  });
+
+  // 选中项打包：把勾选链接解析回 paths 查询参数并合并
+  var boxes = document.querySelectorAll('tbody input[type=checkbox]');
+  var selAll = document.getElementById('selAll');
+  var btnZip = document.getElementById('btnZipSel');
+  var hint = document.getElementById('selHint');
+  function collect() {
+    var parts = [];
+    boxes.forEach(function (b) { if (b.checked) parts.push(b.getAttribute('data-path') === '1' ? b.value : b.value); });
+    return parts;
+  }
+  function refresh() {
+    var n = collect().length;
+    btnZip.disabled = n === 0;
+    hint.textContent = n > 0 ? ('已选 ' + n + ' 项') : '';
+  }
+  boxes.forEach(function (b) { b.addEventListener('change', refresh); });
+  if (selAll) selAll.addEventListener('change', function () {
+    boxes.forEach(function (b) { b.checked = selAll.checked; });
+    refresh();
+  });
+  btnZip.addEventListener('click', function () {
+    // 每个 value 形如 "/dl?path=x" 或 "/?path=x" —— 取 path 值
+    var paths = [];
+    boxes.forEach(function (b) {
+      if (!b.checked) return;
+      var m = b.value.match(/[?&]path=([^&]*)/);
+      if (m) paths.push(decodeURIComponent(m[1]));
+    });
+    if (!paths.length) return;
+    location.href = '/zip?paths=' + paths.map(encodeURIComponent).join(',');
+  });
+})();
+</script>
+</body>
+</html>

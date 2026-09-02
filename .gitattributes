@@ -1,0 +1,15 @@
+# 跨平台换行规范
+* text=auto
+
+# 脚本固定 LF（bash/source 兼容）；bat 固定 CRLF（Windows cmd 需要）
+*.sh   text eol=lf
+*.py   text eol=lf
+*.go   text eol=lf
+*.mod  text eol=lf
+*.bat  text eol=crlf
+
+# 二进制
+*.png  binary
+*.ico  binary
+*.exe  binary
+*.syso binary

@@ -1,0 +1,16 @@
+# ---- 编译产物（源码仓库不含 exe，发布走 GitHub Releases）----
+/LanShare.exe
+/LanShare-dev.exe
+/LanShare-ui-test.exe
+/*.exe
+
+# ---- 本地分发归档 ----
+/dist/
+
+# ---- 系统/编辑器杂项 ----
+*.log
+*.tmp
+Thumbs.db
+.DS_Store
+.idea/
+.vscode/
