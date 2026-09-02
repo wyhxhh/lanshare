@@ -5,7 +5,7 @@ set -euo pipefail
 cd "$(dirname "$0")"
 source ./build-env.sh
 
-VERSION="0.2.0"
+VERSION="0.2.1"
 DIST="dist"
 EXE_NAME="LanShare-v${VERSION}-win64.exe"
 
@@ -27,7 +27,7 @@ import sys, zipfile, os, hashlib
 
 dist, exe = sys.argv[1], sys.argv[2]
 exe_path = os.path.join(dist, exe)
-zip_path = os.path.join(dist, "LanShare-v0.2.0-win64.zip")
+zip_path = os.path.join(dist, os.path.basename(exe).replace(".exe", ".zip"))
 
 def sha(p):
     h = hashlib.sha256()

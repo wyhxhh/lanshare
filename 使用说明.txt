@@ -1,4 +1,4 @@
-LanShare 局域网文件共享 — 使用说明（v0.2.0）
+LanShare 局域网文件共享 — 使用说明（v0.2.1）
 ===============================================
 
 【这是什么】
@@ -65,7 +65,7 @@ LanShare 局域网文件共享 — 使用说明（v0.2.0）
 
 【校验（可选）】
   发布包附带 .sha256 校验文件，可用
-    certutil -hashfile LanShare-v0.2.0-win64.exe SHA256
+    certutil -hashfile LanShare-v0.2.1-win64.exe SHA256
   比对哈希，确认文件完整未被篡改。
 
 【卸载】
