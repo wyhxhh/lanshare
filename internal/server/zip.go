@@ -12,6 +12,11 @@ import (
 	"strings"
 )
 
+// zipFailedHeader 打包失败项计数用的响应头名。
+// 失败数量要等打包结束才知道，而那时响应体早已开始写出、响应头已冻结，
+// 因此改用 HTTP Trailer 传递（先声明名字，body 写完后填值）。
+const zipFailedHeader = "X-LanShare-ZipFailed"
+
 // handleZip 流式打包下载：?paths=rel1,rel2（逗号分隔，可为文件或目录；
 // 提供空值或省略路径项等价于打包共享根）。
 //
@@ -88,6 +93,8 @@ func (s *Server) handleZip(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/zip")
 	w.Header().Set("Content-Disposition", contentDisposition(base+".zip"))
 	w.Header().Set("Cache-Control", "no-store")
+	// 声明 trailer：名字必须在任何响应体写出之前声明，值留到打包结束后填。
+	w.Header().Set("Trailer", zipFailedHeader)
 
 	zw := zip.NewWriter(w)
 	seen := make(map[string]bool)
@@ -114,10 +121,13 @@ func (s *Server) handleZip(w http.ResponseWriter, r *http.Request) {
 		if err == nil {
 			io.WriteString(fw, sb.String())
 		}
-		w.Header().Set("X-LanShare-ZipFailed", strconv.Itoa(len(failed)))
 	}
-
 	zw.Close()
+
+	// trailer 值在此填充（响应头已发出，只有 trailer 还能追加）
+	if len(failed) > 0 {
+		w.Header().Set(zipFailedHeader, strconv.Itoa(len(failed)))
+	}
 
 	if added == 0 && len(failed) > 0 {
 		// 全部失败：无法返回 4xx（已写流），但至少浏览器拿到的是空包+报告

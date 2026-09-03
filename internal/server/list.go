@@ -260,6 +260,9 @@ func (s *Server) zipDisplayName(rel string) string {
 // ---------------- 下载（Range / HEAD） ----------------
 
 // inlineExts 浏览器内联预览的类型白名单；其余一律附件下载。
+//
+// 安全前提：白名单只收"不会被执行"的类型。.html/.htm/.xml/.xhtml 刻意排除，
+// 它们会被浏览器当文档解析并执行脚本，一旦内联即构成同源 XSS。
 var inlineExts = map[string]bool{
 	".txt": true, ".md": true, ".log": true, ".json": true, ".csv": true,
 	".pdf": true,
@@ -313,7 +316,14 @@ func (s *Server) handleDownload(w http.ResponseWriter, r *http.Request) {
 	ext := strings.ToLower(filepath.Ext(name))
 	if !inlineExts[ext] {
 		w.Header().Set("Content-Disposition", contentDisposition(name))
+	} else if ext == ".svg" {
+		// SVG 是白名单里唯一会被浏览器当"文档"渲染的类型，可内嵌 <script>。
+		// 直接打开即构成同源 XSS：脚本能读取同域下任意共享文件，
+		// 连访问密码也一并绕过。CSP sandbox 禁掉脚本执行，渲染不受影响。
+		w.Header().Set("Content-Security-Policy", "sandbox")
 	}
+	// 一律禁止 MIME 嗅探：防止 .txt 等内容里的 HTML 被浏览器当成网页解析执行
+	w.Header().Set("X-Content-Type-Options", "nosniff")
 	http.ServeContent(w, r, name, info.ModTime(), f)
 }
 

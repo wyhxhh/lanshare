@@ -44,36 +44,36 @@ var (
 // light 主题色映射：把 Fyne 组件所需 ColorName 全部映射到品牌色板，
 // 未列出的名字回退默认主题（保证新组件不"穿错色"）。
 var lightMap = map[fyne.ThemeColorName]color.Color{
-	theme.ColorNameBackground:           colBG,
-	theme.ColorNameButton:               color.NRGBA{0xEE, 0xF1, 0xF7, 0xFF}, // 普通按钮：窗底色（hover 时变浅蓝）
-	theme.ColorNameDisabled:             colDisabled,
-	theme.ColorNameDisabledButton:       color.NRGBA{0xEC, 0xEF, 0xF5, 0xFF},
-	theme.ColorNameError:                color.NRGBA{0xE5, 0x48, 0x4D, 0xFF},
-	theme.ColorNameFocus:                colPrimary, // 输入聚焦描边
-	theme.ColorNameForeground:           colInk,
-	theme.ColorNameForegroundOnPrimary:  colOnPrimary,
-	theme.ColorNameForegroundOnError:    color.NRGBA{0xFF, 0xFF, 0xFF, 0xFF},
-	theme.ColorNameForegroundOnSuccess:  color.NRGBA{0xFF, 0xFF, 0xFF, 0xFF},
-	theme.ColorNameForegroundOnWarning:  color.NRGBA{0x1B, 0x24, 0x34, 0xFF},
-	theme.ColorNameHeaderBackground:     colCard,
-	theme.ColorNameHover:                colHover,
-	theme.ColorNameHyperlink:            colPrimary,
-	theme.ColorNameInnerWindowBorder:    colBorder,
+	theme.ColorNameBackground:                colBG,
+	theme.ColorNameButton:                    color.NRGBA{0xEE, 0xF1, 0xF7, 0xFF}, // 普通按钮：窗底色（hover 时变浅蓝）
+	theme.ColorNameDisabled:                  colDisabled,
+	theme.ColorNameDisabledButton:            color.NRGBA{0xEC, 0xEF, 0xF5, 0xFF},
+	theme.ColorNameError:                     color.NRGBA{0xE5, 0x48, 0x4D, 0xFF},
+	theme.ColorNameFocus:                     colPrimary, // 输入聚焦描边
+	theme.ColorNameForeground:                colInk,
+	theme.ColorNameForegroundOnPrimary:       colOnPrimary,
+	theme.ColorNameForegroundOnError:         color.NRGBA{0xFF, 0xFF, 0xFF, 0xFF},
+	theme.ColorNameForegroundOnSuccess:       color.NRGBA{0xFF, 0xFF, 0xFF, 0xFF},
+	theme.ColorNameForegroundOnWarning:       color.NRGBA{0x1B, 0x24, 0x34, 0xFF},
+	theme.ColorNameHeaderBackground:          colCard,
+	theme.ColorNameHover:                     colHover,
+	theme.ColorNameHyperlink:                 colPrimary,
+	theme.ColorNameInnerWindowBorder:         colBorder,
 	theme.ColorNameInnerWindowBorderInactive: color.NRGBA{0xE8, 0xEC, 0xF3, 0xFF},
-	theme.ColorNameInputBackground:      color.NRGBA{0xFB, 0xFC, 0xFE, 0xFF},
-	theme.ColorNameInputBorder:          colInputBd,
-	theme.ColorNameMenuBackground:       colCard,
-	theme.ColorNameOverlayBackground:    color.NRGBA{0xFF, 0xFF, 0xFF, 0xE6}, // 对话框遮罩底
-	theme.ColorNamePlaceHolder:          colDim,
-	theme.ColorNamePressed:              colPressed,
-	theme.ColorNamePrimary:              colPrimary,
-	theme.ColorNameScrollBar:            color.NRGBA{0xC1, 0xCA, 0xD9, 0xFF},
-	theme.ColorNameScrollBarBackground:  color.NRGBA{0x00, 0x00, 0x00, 0x00},
-	theme.ColorNameSelection:            color.NRGBA{0xCF, 0xE0, 0xFF, 0xFF},
-	theme.ColorNameSeparator:            colLine,
-	theme.ColorNameShadow:               color.NRGBA{0x10, 0x1E, 0x3C, 0x28},
-	theme.ColorNameSuccess:              colGreen,
-	theme.ColorNameWarning:              color.NRGBA{0xE8, 0x8A, 0x1A, 0xFF},
+	theme.ColorNameInputBackground:           color.NRGBA{0xFB, 0xFC, 0xFE, 0xFF},
+	theme.ColorNameInputBorder:               colInputBd,
+	theme.ColorNameMenuBackground:            colCard,
+	theme.ColorNameOverlayBackground:         color.NRGBA{0xFF, 0xFF, 0xFF, 0xE6}, // 对话框遮罩底
+	theme.ColorNamePlaceHolder:               colDim,
+	theme.ColorNamePressed:                   colPressed,
+	theme.ColorNamePrimary:                   colPrimary,
+	theme.ColorNameScrollBar:                 color.NRGBA{0xC1, 0xCA, 0xD9, 0xFF},
+	theme.ColorNameScrollBarBackground:       color.NRGBA{0x00, 0x00, 0x00, 0x00},
+	theme.ColorNameSelection:                 color.NRGBA{0xCF, 0xE0, 0xFF, 0xFF},
+	theme.ColorNameSeparator:                 colLine,
+	theme.ColorNameShadow:                    color.NRGBA{0x10, 0x1E, 0x3C, 0x28},
+	theme.ColorNameSuccess:                   colGreen,
+	theme.ColorNameWarning:                   color.NRGBA{0xE8, 0x8A, 0x1A, 0xFF},
 }
 
 // lanTheme 实现 fyne.Theme：固定浅色品牌配色 + CJK 字体。

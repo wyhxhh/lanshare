@@ -40,9 +40,9 @@ const (
 	bifReturnOnlyFSDirs = 0x0001 // 仅文件系统目录
 	bifNewDialogStyle   = 0x0040 // 新版对话框样式（地址栏/新建文件夹）
 
-	bffmInitialized   = 1               // 回调消息：对话框已初始化
-	bffmSetSelectionW = 0x0400 + 103    // BFFM_SETSELECTION = WM_USER + 103
-	maxPickPath       = 32768           // 选择缓冲（容纳超长路径）
+	bffmInitialized   = 1            // 回调消息：对话框已初始化
+	bffmSetSelectionW = 0x0400 + 103 // BFFM_SETSELECTION = WM_USER + 103
+	maxPickPath       = 32768        // 选择缓冲（容纳超长路径）
 )
 
 // browseCallbackProc 对话框回调：初始化完成后把上次选择的目录定位进地址栏。

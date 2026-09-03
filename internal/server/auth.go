@@ -43,23 +43,40 @@ func (s *Server) requireAuth(next http.HandlerFunc) http.HandlerFunc {
 }
 
 // validSession 校验请求携带的会话 cookie 且未过期。
+//
+// 读多写少：命中判断走读锁；滑动续期只在剩余有效期不足一半时才升级为写锁。
+// 否则每个已认证请求（含大文件分片的每个 Range 请求）都要抢一次全局写锁，
+// 白白把并发请求串行化。
 func (s *Server) validSession(r *http.Request) bool {
 	c, err := r.Cookie(cookieName)
 	if err != nil || c.Value == "" {
 		return false
 	}
-	s.authMu.Lock()
-	defer s.authMu.Unlock()
-	exp, ok := s.sessions[c.Value]
+	now := time.Now()
+	tok := c.Value
+	// 剩余不足一半时才续期
+	renewAt := now.Add(s.cfg.SessionTTL / 2)
+
+	s.authMu.RLock()
+	exp, ok := s.sessions[tok]
+	s.authMu.RUnlock()
 	if !ok {
 		return false
 	}
-	if time.Now().After(exp) {
-		delete(s.sessions, c.Value)
+	if now.After(exp) {
+		s.authMu.Lock()
+		delete(s.sessions, tok)
+		s.authMu.Unlock()
 		return false
 	}
-	// 滑动续期
-	s.sessions[c.Value] = time.Now().Add(s.cfg.SessionTTL)
+	if renewAt.After(exp) {
+		s.authMu.Lock()
+		// 双重检查：可能已被并发请求续期
+		if cur, ok := s.sessions[tok]; ok && renewAt.After(cur) {
+			s.sessions[tok] = now.Add(s.cfg.SessionTTL)
+		}
+		s.authMu.Unlock()
+	}
 	return true
 }
 

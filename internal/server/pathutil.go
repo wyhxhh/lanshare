@@ -68,8 +68,7 @@ func cleanSegments(rel string, allowHidden bool) (string, error) {
 		}
 		// Windows 规范化陷阱：段尾点或空格会被系统静默裁剪，
 		// 若存在裁剪则拒绝（防止 "a./../" 与 "a/../" 判定不一致）。
-		trimmed := strings.TrimRight(seg, ". ")
-		if trimmed != seg || seg == "" {
+		if trimmed := strings.TrimRight(seg, ". "); trimmed != seg {
 			return "", errPathForbidden
 		}
 		if windowsReserved.MatchString(seg) {

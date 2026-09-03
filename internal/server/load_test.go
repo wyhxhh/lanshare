@@ -15,9 +15,12 @@ import (
 )
 
 // TestConcurrentMixedLoad 多人高并发压测（真实 TCP + 并发 HTTP 客户端）：
-//   目录列表 / Range 分片下载（校验逐字节一致）/ 整目录流式 ZIP / HEAD / 小文件下载 / 健康检查。
+//
+//	目录列表 / Range 分片下载（校验逐字节一致）/ 整目录流式 ZIP / HEAD / 小文件下载 / 健康检查。
+//
 // 由 LSH_LOAD=1 显式开启（避免拖慢常规回归），用法：
-//   LSH_LOAD=1 go test ./internal/server/ -run TestConcurrentMixedLoad -v -count=1
+//
+//	LSH_LOAD=1 go test ./internal/server/ -run TestConcurrentMixedLoad -v -count=1
 func TestConcurrentMixedLoad(t *testing.T) {
 	if os.Getenv("LSH_LOAD") == "" {
 		t.Skip("并发压测需显式开启：LSH_LOAD=1")

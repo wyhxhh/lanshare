@@ -7,6 +7,7 @@
 package server
 
 import (
+	"bufio"
 	"context"
 	"errors"
 	"fmt"
@@ -17,6 +18,7 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"sort"
 	"strings"
 	"sync"
 	"sync/atomic"
@@ -58,6 +60,20 @@ const (
 	cookieName               = "lanshare_session"
 )
 
+// 过期回收参数。sessions 与 fails 都是"只增不减"的内存表：
+// sessions 仅在会话被再次访问时懒删除，fails 仅在对应 IP 登录成功时清除。
+// 长期运行（多人反复登录、探测式扫密码）会持续累积，故由后台协程定期回收。
+// maxFailEntries 失败记录硬上限：超出则裁掉最旧的一半。
+const maxFailEntries = 10000
+
+// 以下两个周期设为变量，便于测试缩短后做端到端验证。
+var (
+	reapInterval = 5 * time.Minute
+	// failRetainAfter 失败记录在退避结束后的额外保留期：
+	// 避免"等退避过期就能满速重试"，削弱暴力破解防护。
+	failRetainAfter = 10 * time.Minute
+)
+
 func (c *Config) fillDefaults() {
 	if c.Port == 0 {
 		c.Port = DefaultPort
@@ -95,10 +111,14 @@ type Server struct {
 	tplList  *template.Template
 	tplLogin *template.Template
 
-	authMu   sync.Mutex
+	authMu   sync.RWMutex
 	sessions map[string]time.Time // token → 过期时间
 	failMu   sync.Mutex
 	fails    map[string]failRec // IP → 失败记录（登录退避）
+
+	stopReap chan struct{} // 关闭即终止过期回收协程
+	reapWg   sync.WaitGroup
+	reapOnce sync.Once // 保证 Shutdown 重复调用时不重复关闭 channel
 }
 
 type failRec struct {
@@ -193,6 +213,9 @@ func (s *Server) Start() error {
 	}
 	s.ln = ln
 	s.startedAt = time.Now()
+	s.stopReap = make(chan struct{})
+	s.reapWg.Add(1)
+	go s.reapLoop()
 
 	go func() {
 		err := s.srv.Serve(ln)
@@ -234,9 +257,13 @@ func (s *Server) Port() int {
 }
 
 // Shutdown 优雅关闭：停止接收新连接并等待活跃请求完成；
-// 超过 ctx 宽限则强制断开。
+// 超过 ctx 宽限则强制断开。可重复调用（第二次起为空操作）。
 func (s *Server) Shutdown(ctx context.Context) error {
 	s.logf(LogEntry{Time: time.Now(), Method: "SERVER", Path: "正在停止服务…", Status: 0})
+	if s.stopReap != nil {
+		s.reapOnce.Do(func() { close(s.stopReap) })
+		s.reapWg.Wait() // 等回收协程退出，避免残留 goroutine
+	}
 	if s.srv == nil {
 		return nil
 	}
@@ -254,6 +281,64 @@ func (s *Server) Uptime() time.Duration {
 		return 0
 	}
 	return time.Since(s.startedAt)
+}
+
+// ---------------- 过期回收 ----------------
+
+// reapLoop 后台周期回收过期会话与失效的失败记录，随 Shutdown 退出。
+func (s *Server) reapLoop() {
+	defer s.reapWg.Done()
+	tk := time.NewTicker(reapInterval)
+	defer tk.Stop()
+	for {
+		select {
+		case <-s.stopReap:
+			return
+		case <-tk.C:
+			s.reapExpired(time.Now())
+		}
+	}
+}
+
+// reapExpired 回收过期会话与失效的失败记录。now 由调用方注入，便于测试。
+func (s *Server) reapExpired(now time.Time) {
+	s.authMu.Lock()
+	for tok, exp := range s.sessions {
+		if now.After(exp) {
+			delete(s.sessions, tok)
+		}
+	}
+	s.authMu.Unlock()
+
+	s.failMu.Lock()
+	for ip, rec := range s.fails {
+		if now.After(rec.until.Add(failRetainAfter)) {
+			delete(s.fails, ip)
+		}
+	}
+	if len(s.fails) > maxFailEntries {
+		s.trimFails(maxFailEntries / 2)
+	}
+	s.failMu.Unlock()
+}
+
+// trimFails 裁掉退避截止时间最旧的记录，只保留 keep 条（调用方须持有 failMu）。
+func (s *Server) trimFails(keep int) {
+	if keep < 0 {
+		keep = 0
+	}
+	type entry struct {
+		ip    string
+		until time.Time
+	}
+	all := make([]entry, 0, len(s.fails))
+	for ip, rec := range s.fails {
+		all = append(all, entry{ip: ip, until: rec.until})
+	}
+	sort.Slice(all, func(i, j int) bool { return all[i].until.Before(all[j].until) })
+	for i := 0; i < len(all)-keep; i++ {
+		delete(s.fails, all[i].ip)
+	}
 }
 
 func (s *Server) logf(e LogEntry) {
@@ -274,6 +359,12 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	start := time.Now()
 	s.activeReq.Add(1)
 	defer s.activeReq.Add(-1)
+
+	// 全站安全基线头：必须在任何响应体写出之前设置，集中在此处统一生效。
+	//   - nosniff：禁止 MIME 嗅探，避免文本类文件被浏览器当成网页解析执行
+	//   - SAMEORIGIN：禁止被第三方页面 iframe 嵌套，防点击劫持
+	w.Header().Set("X-Content-Type-Options", "nosniff")
+	w.Header().Set("X-Frame-Options", "SAMEORIGIN")
 
 	sw := &statWriter{ResponseWriter: w}
 	s.mux.ServeHTTP(sw, r)
@@ -334,10 +425,23 @@ func (w *statWriter) statusCode() int {
 
 func (w *statWriter) written() int64 { return w.n }
 
+// Unwrap 暴露底层 ResponseWriter：让 http.ResponseController 等工具
+// 能穿透本包装直达底层（Go 1.20+ 的包装惯例）。
+func (w *statWriter) Unwrap() http.ResponseWriter { return w.ResponseWriter }
+
 func (w *statWriter) Flush() {
 	if f, ok := w.ResponseWriter.(http.Flusher); ok {
 		f.Flush()
 	}
+}
+
+// Hijack 转发底层连接。缺少它时，包装会静默吞掉底层的协议升级能力
+// （WebSocket 等），且编译器不会报错 —— 必须显式保真。
+func (w *statWriter) Hijack() (net.Conn, *bufio.ReadWriter, error) {
+	if h, ok := w.ResponseWriter.(http.Hijacker); ok {
+		return h.Hijack()
+	}
+	return nil, nil, http.ErrNotSupported
 }
 
 // ReadFrom 转发到底层：若底层支持 ReaderFrom（sendfile/零拷贝），
