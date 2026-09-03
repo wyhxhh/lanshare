@@ -5,7 +5,7 @@ set -euo pipefail
 cd "$(dirname "$0")"
 source ./build-env.sh
 
-VERSION="0.2.1"
+VERSION="0.2.2"
 DIST="dist"
 EXE_NAME="LanShare-v${VERSION}-win64.exe"
 

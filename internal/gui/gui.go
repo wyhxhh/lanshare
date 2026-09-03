@@ -28,7 +28,7 @@ import (
 )
 
 // appVersion 界面与网页页脚展示的版本号，发布前在此更新。
-const appVersion = "0.2.1"
+const appVersion = "0.2.2"
 
 // maxLogLines 日志面板保留的最大行数（超出丢弃最旧）。
 const maxLogLines = 2000
